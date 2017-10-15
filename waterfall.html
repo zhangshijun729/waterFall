@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="keywords" content="">
+  <meta name="description" content="">
+  <script src="jquery-3.1.1.js"></script>
+  <title></title>
+  <style>
+    ul,
+    li {
+      list-style: none;
+      padding-left: 0;
+    }
+    a{
+      text-decoration: none;
+      color: black;
+    }
+    #newsCt {
+      max-width: 1000px;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    .item {
+      position: absolute;
+      width: 300px;
+      border: 1px solid #999;
+      margin: 10px;
+      padding: 5px;
+    }
+
+    img {
+      width: 100%;
+    }
+
+    .hide {
+      display: none;
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #load {
+      visibility: hidden;
+      padding: 5px;
+      border: 1px solid;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <ul id='newsCt'>
+    <li class="item hide"></li>
+  </ul>
+  <div id="load"></div>
+</div>
+<script>
+  var curPage = 1
+  var perPageCount = 10
+  var isDataArrive = true
+  var i
+  start()
+  $(window).on('scroll', function () {                        //窗口滚动时
+    if (i) {
+      clearTimeout(i)
+    }
+    i = setTimeout(function () {
+      if (!isDataArrive) {
+        if (isVisible()) {                                     //如果出现了
+          start()
+        }
+      }
+    }, 500)
+  })
+  $(window).on('resize', function () {
+    waterfallPlace()
+  })
+
+  //从后端获取数据
+  function start() {
+    isDataArrive = true
+    getdata(function (newsList) {
+      $.each(newsList, function (idx, news) {              //遍历获取到的数据
+        var $node = getNode(news)                      //选取一个
+        $node.find('img').on('load', function () {        //选取其中的图片加载
+          $('#newsCt').append($node)                   //放到页面里
+          waterfallPlace()                             //执行瀑布流放置
+        })
+      })
+    })
+    isDataArrive = false
+  }
+
+  //从后端获取数据的详细函数
+  function getdata(callback) {
+    $.ajax({
+      url: 'http://platform.sina.com.cn/slide/album_tech',  //新浪后端的接口
+      dataType: 'jsonp',                                    //服务器返回的数据类型
+      jsonp: 'jsoncallback',                                //重写回调函数的名字
+      data: {                                               //传给服务器的数据
+        app_key: '1271687855',
+        num: perPageCount,                                 //一次获取多少数据
+        page: curPage                                      //下标
+      }
+    }).done(function (ret) {                               //服务器返回数据后执行
+      if (ret && ret.status && ret.status.code === '0') {
+        console.log(ret)
+        callback(ret.data);                              //生成节点
+        curPage++                                        //页数加一
+      } else {
+        console.log('get error data')
+      }
+    })
+  }
+
+  //获取到的数据进行拼装详细函数
+  function getNode(item) {
+    var tpl = ''
+    tpl += '<li class="item">';
+    tpl += '<a href="' + item.url + '"class="link"><img src="' + item.img_url + '" alt="">';
+    tpl += '<h4 class="header">' + item.short_name + '</h4>';
+    tpl += '<p class="desp">' + item.short_intro + '</p>';
+    tpl += '</a></li>';
+
+    return $(tpl)
+  }
+
+  //瀑布流布局的详细函数
+  function waterfallPlace() {
+    var colLength = parseInt($('#newsCt').width() / $('.item').outerWidth())   //一排的个数
+    var colSumHeight = []                                    //创建一个数组用于存放高度
+    for (var i = 0; i < colLength; i++) {                          //遍历数组后初始化高度
+      colSumHeight[i] = 0
+    }
+    $('.item').each(function () {
+      var minSumHeight = Math.min.apply(null, colSumHeight)//获取数组最小的高度
+      var minindex = colSumHeight.indexOf(minSumHeight)//获取最小高度的index
+      $(this).css({
+        left: $(this).outerWidth(true) * minindex,
+        top: colSumHeight[minindex]
+      })
+      colSumHeight[minindex] += $(this).outerHeight(true)//在最小高度的Index上加上高度
+      $('#newsCt').height(Math.max.apply(null, colSumHeight))
+    })
+
+  }
+
+  function isVisible() {
+    var scrollTop = $(window).scrollTop()
+    var height = $(window).height()
+    var top = $('#load').offset().top
+
+    if (top < scrollTop + height) {
+      return true
+    }
+    return false
+  }
+</script>
+</body>
+</html>
