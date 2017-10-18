@@ -61,13 +61,13 @@
   var isDataArrive = true
   var i
   start()
-  $(window).on('scroll', function () {                        //窗口滚动时
+  $(window).on('scroll', function () {
     if (i) {
       clearTimeout(i)
     }
     i = setTimeout(function () {
       if (!isDataArrive) {
-        if (isVisible()) {                                     //如果出现了
+        if (isVisible()) {
           start()
         }
       }
@@ -77,44 +77,41 @@
     waterfallPlace()
   })
 
-  //从后端获取数据
   function start() {
     isDataArrive = true
     getdata(function (newsList) {
-      $.each(newsList, function (idx, news) {              //遍历获取到的数据
-        var $node = getNode(news)                      //选取一个
-        $node.find('img').on('load', function () {        //选取其中的图片加载
-          $('#newsCt').append($node)                   //放到页面里
-          waterfallPlace()                             //执行瀑布流放置
+      $.each(newsList, function (idx, news) {
+        var $node = getNode(news)
+        $node.find('img').on('load', function () {
+          $('#newsCt').append($node)
+          waterfallPlace()
         })
       })
     })
     isDataArrive = false
   }
 
-  //从后端获取数据的详细函数
   function getdata(callback) {
     $.ajax({
-      url: 'https://platform.sina.com.cn/slide/album_tech',  //新浪后端的接口
-      dataType: 'jsonp',                                    //服务器返回的数据类型
-      jsonp: 'jsoncallback',                                //重写回调函数的名字
-      data: {                                               //传给服务器的数据
+      url: 'https://platform.sina.com.cn/slide/album_tech',
+      dataType: 'jsonp',
+      jsonp: 'jsoncallback',
+      data: {
         app_key: '1271687855',
-        num: perPageCount,                                 //一次获取多少数据
-        page: curPage                                      //下标
+        num: perPageCount,
+        page: curPage
       }
-    }).done(function (ret) {                               //服务器返回数据后执行
+    }).done(function (ret) {
       if (ret && ret.status && ret.status.code === '0') {
         console.log(ret)
-        callback(ret.data);                              //生成节点
-        curPage++                                        //页数加一
+        callback(ret.data);
+        curPage++
       } else {
         console.log('get error data')
       }
     })
   }
 
-  //获取到的数据进行拼装详细函数
   function getNode(item) {
     var tpl = ''
     tpl += '<li class="item">';
@@ -128,19 +125,19 @@
 
   //瀑布流布局的详细函数
   function waterfallPlace() {
-    var colLength = parseInt($('#newsCt').width() / $('.item').outerWidth())   //一排的个数
-    var colSumHeight = []                                    //创建一个数组用于存放高度
-    for (var i = 0; i < colLength; i++) {                          //遍历数组后初始化高度
+    var colLength = parseInt($('#newsCt').width() / $('.item').outerWidth())
+    var colSumHeight = []
+    for (var i = 0; i < colLength; i++) {
       colSumHeight[i] = 0
     }
     $('.item').each(function () {
-      var minSumHeight = Math.min.apply(null, colSumHeight)//获取数组最小的高度
-      var minindex = colSumHeight.indexOf(minSumHeight)//获取最小高度的index
+      var minSumHeight = Math.min.apply(null, colSumHeight)
+      var minindex = colSumHeight.indexOf(minSumHeight)
       $(this).css({
         left: $(this).outerWidth(true) * minindex,
         top: colSumHeight[minindex]
       })
-      colSumHeight[minindex] += $(this).outerHeight(true)//在最小高度的Index上加上高度
+      colSumHeight[minindex] += $(this).outerHeight(true)
       $('#newsCt').height(Math.max.apply(null, colSumHeight))
     })
 
